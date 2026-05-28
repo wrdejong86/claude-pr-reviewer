@@ -52,16 +52,37 @@ jobs:
               - **Positive** — what's good
             Skip categories with nothing to report. If the PR is fine, say so.
 
-            STEP 4 — Post review:
-            Post ONE top-level comment with:
-              `gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"`
+            STEP 4 — Post review (READ CAREFULLY):
+
+            You have TWO different commenting tools. Do NOT confuse them:
+
+            A) `mcp__github_comment__update_claude_comment` — updates the
+               progress-tracker comment. Use ONLY for short status updates
+               like "Loading skills", "Reading diff", "Review posted ✓".
+               This is NOT where the actual review goes.
+
+            B) `gh pr comment <pr> --body "..."` — creates a NEW comment.
+               THIS IS WHERE THE FULL REVIEW MUST GO. It is a separate
+               comment on the PR, visible to the user as the actual review.
+
+            REQUIRED ACTION:
+            Call `gh pr comment ${{ github.event.pull_request.number }} --body "<your full review>"`
+            ONCE with the complete review text. The review must be a SEPARATE
+            comment from the progress tracker — never inside the tracker.
+
             Optionally also use `mcp__github_inline_comment__create_inline_comment`
-            (with confirmed: true) for specific code findings.
+            (with confirmed: true) for specific code findings tied to lines.
 
-            IMPORTANT: Only post via these GitHub tools — do NOT just output
-            the review text as a message; it will be lost. The review only
-            counts if it lands as a PR comment.
+            Verify: after calling gh pr comment, you should see a new comment
+            appear on the PR (not just an updated progress tracker). If you
+            only updated the tracker, you have NOT posted the review.
 
-            Start the body with a one-line header listing which skills you
-            applied. Write the review in the same language as the PR
-            description (default English).
+            Format of the gh pr comment body:
+            - First line: header listing which skills you applied
+            - Then the review grouped by severity (Blocking / Should fix / Nice to have / Positive)
+            - Skip categories with nothing to report
+            - Write in the same language as the PR description (default English)
+
+            FINAL: do not output the review as a chat message — only the
+            gh pr comment call counts. Output anything else only as a brief
+            confirmation ("Posted review").
