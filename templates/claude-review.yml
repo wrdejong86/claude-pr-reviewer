@@ -1,0 +1,56 @@
+name: Claude PR review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR repo
+        uses: actions/checkout@v4
+
+      - name: Checkout reviewer (for skills)
+        uses: actions/checkout@v4
+        with:
+          repository: wrdejong86/claude-pr-reviewer
+          token: ${{ secrets.BOT_GITHUB_TOKEN }}
+          path: .reviewer
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.BOT_GITHUB_TOKEN }}
+          prompt: |
+            You are reviewing pull request #${{ github.event.pull_request.number }}
+            in repository ${{ github.repository }}.
+
+            STEP 1 — Load skills:
+            Read every `.md` file in `.reviewer/skills/` (skip `README.md`).
+            These are your review instructions. Apply only the skills relevant
+            to what this PR changes.
+
+            STEP 2 — Read the PR:
+              - `gh pr view ${{ github.event.pull_request.number }}` for title/body
+              - `gh pr diff ${{ github.event.pull_request.number }}` for the diff
+
+            STEP 3 — Review:
+            Reference every finding with `file:line`. Never invent code that
+            isn't in the diff. Group findings as:
+              - **Blocking** — must fix before merge
+              - **Should fix** — strong recommendation
+              - **Nice to have** — optional
+              - **Positive** — what's good
+            Skip categories with nothing to report. If the PR is fine, say so.
+
+            STEP 4 — Post review:
+            Post ONE comment with `gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"`.
+            Start with a one-line header listing which skills you applied.
+            Write the review in the same language as the PR description (default English).
