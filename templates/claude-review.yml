@@ -27,14 +27,17 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(ls:*),Bash(cat:*)"
           prompt: |
             You are reviewing pull request #${{ github.event.pull_request.number }}
             in repository ${{ github.repository }}.
 
             STEP 1 — Load skills:
-            Read every `.md` file in `.reviewer/skills/` (skip `README.md`).
-            These are your review instructions. Apply only the skills relevant
-            to what this PR changes.
+            Read every `.md` file in `.reviewer/skills/` (skip `README.md`)
+            using the Read tool. These are your review instructions. Apply
+            only the skills relevant to what this PR changes.
 
             STEP 2 — Read the PR:
               - `gh pr view ${{ github.event.pull_request.number }}` for title/body
@@ -50,6 +53,15 @@ jobs:
             Skip categories with nothing to report. If the PR is fine, say so.
 
             STEP 4 — Post review:
-            Post ONE comment with `gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"`.
-            Start with a one-line header listing which skills you applied.
-            Write the review in the same language as the PR description (default English).
+            Post ONE top-level comment with:
+              `gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"`
+            Optionally also use `mcp__github_inline_comment__create_inline_comment`
+            (with confirmed: true) for specific code findings.
+
+            IMPORTANT: Only post via these GitHub tools — do NOT just output
+            the review text as a message; it will be lost. The review only
+            counts if it lands as a PR comment.
+
+            Start the body with a one-line header listing which skills you
+            applied. Write the review in the same language as the PR
+            description (default English).
