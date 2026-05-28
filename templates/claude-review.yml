@@ -29,7 +29,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(ls:*),Bash(cat:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh issue create:*),Bash(ls:*),Bash(cat:*)"
           prompt: |
             You are reviewing pull request #${{ github.event.pull_request.number }}
             in repository ${{ github.repository }}.
@@ -86,3 +86,21 @@ jobs:
             FINAL: do not output the review as a chat message — only the
             gh pr comment call counts. Output anything else only as a brief
             confirmation ("Posted review").
+
+            STEP 5 — Live-gang triage (zie skill 15-live-gang):
+            If the PR introduces anything that needs attention BEFORE going
+            live (new cron, new env vars, new external service, destructive
+            migration, new PII storage, etc.), create a SEPARATE GitHub
+            issue per category using:
+
+              gh issue create --repo ${{ github.repository }} \
+                --title "🚀 Live-gang: <korte titel>" \
+                --label "live-gang" \
+                --body "<body following the template in 15-live-gang.md>"
+
+            Maximum 5 issues per PR. If nothing is live-gang relevant,
+            create no issues. Always include a reference to the originating
+            PR (#${{ github.event.pull_request.number }}) in the issue body.
+
+            After creating issues, mention them at the bottom of the review
+            comment under a "🚀 Live-gang aandachtspunten" header with links.
