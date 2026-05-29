@@ -81,7 +81,12 @@ jobs:
             - First line: header listing which skills you applied
             - Then the review grouped by severity (Blocking / Should fix / Nice to have / Positive)
             - Skip categories with nothing to report
-            - Write in the same language as the PR description (default English)
+            - ALWAYS write the review in Dutch (Nederlands), regardless of
+              the PR title/description language or the language of code
+              comments. Section headers, severity labels, and all prose
+              must be Dutch. Code snippets stay as-is. This applies to
+              both the main review comment AND any live-gang issues you
+              open (STEP 5 below).
 
             FINAL: do not output the review as a chat message — only the
             gh pr comment call counts. Output anything else only as a brief
