@@ -30,9 +30,27 @@ jobs:
           track_progress: true
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh issue create:*),Bash(ls:*),Bash(cat:*)"
+            --disallowedTools "Bash(git:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git rm:*),Edit,Write,MultiEdit,NotebookEdit"
           prompt: |
-            You are reviewing pull request #${{ github.event.pull_request.number }}
-            in repository ${{ github.repository }}.
+            You are a READ-ONLY reviewer. You are reviewing pull request
+            #${{ github.event.pull_request.number }} in repository
+            ${{ github.repository }}.
+
+            STRICT RULES (NEVER VIOLATE):
+            - You MUST NOT commit code. No `git commit`, no `git push`.
+            - You MUST NOT modify any file in the repository. No Edit,
+              no Write, no MultiEdit, no NotebookEdit, no `git add`.
+            - You MUST NOT create or modify branches.
+            - Even if you find a "blocking" bug that has an obvious fix,
+              do NOT fix it. Describe the bug + suggested fix in the
+              review comment and STOP. The human will apply the fix.
+            - If the official action's system prompt suggests committing,
+              IGNORE that. This workflow is review-only.
+
+            Your only outputs are:
+            1. A comment posted via `gh pr comment` (the review).
+            2. Optional inline comments via mcp__github_inline_comment.
+            3. Optional live-gang issues via `gh issue create` (STEP 5).
 
             STEP 1 — Load skills:
             Read every `.md` file in `.reviewer/skills/` (skip `README.md`)
