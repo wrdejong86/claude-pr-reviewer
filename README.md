@@ -95,6 +95,10 @@ de free tier.
 
 ## Troubleshooting
 
+- **Workflow draait helemaal niet** → check of de PR alleen *.md / lockfiles /
+  .gitignore / LICENSE wijzigt. Die zijn bewust geskipt (`paths-ignore` in de
+  workflow) om abonnement-quota te sparen. Voeg één code-wijziging toe en de
+  bot draait weer.
 - **Workflow draait maar geen review** → check Actions log; meestal mist een
   secret of is de OAuth token verlopen (`claude setup-token` opnieuw draaien).
 - **Skills niet gevonden / 403 bij checkout van reviewer repo** → de

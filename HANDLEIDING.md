@@ -212,7 +212,7 @@ bot-account of PAT (`BOT_GITHUB_TOKEN`) aan te maken.
 | Workflow draait, maar geen review | Check de **Actions**-log. Meestal mist het secret `CLAUDE_CODE_OAUTH_TOKEN`, of de token is verlopen → draai `claude setup-token` opnieuw en update het secret. |
 | Skills niet gevonden / 403 bij checkout | De reviewer-repo is niet **publiek**, of de `repository:`-regel (stap 4B) wijst naar de verkeerde plek. |
 | Bot reageert als `github-actions[bot]` i.p.v. `claude[bot]` | De **Claude GitHub App** is niet op die repo geïnstalleerd (stap 2). |
-| Helemaal geen workflow-run | Het bestand staat niet op de **main**-branch van de target-repo, of de PR is een **draft** (draft-PR's worden overgeslagen). |
+| Helemaal geen workflow-run | Het bestand staat niet op de **main**-branch van de target-repo, of de PR is een **draft** (draft-PR's worden overgeslagen), of de PR wijzigt alleen `*.md` / lockfiles / `.gitignore` / `LICENSE` (bewust geskipt via `paths-ignore` om quota te sparen). |
 | Review te oppervlakkig | Maak de skills specifieker, of voeg in de workflow toe aan `claude_args`: `--model claude-opus-4-7` (gebruikt meer van je abonnement-quota). |
 | Dezelfde review dubbel voor één commit | Mag niet meer gebeuren (recent gefixt met een SHA-marker). Een **nieuwe** comment per push is wél normaal en gewenst. Draait de target-repo nog een oude workflow? Kopieer de nieuwste `templates/claude-review.yml` opnieuw. |
 

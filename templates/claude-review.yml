@@ -3,6 +3,20 @@ name: Claude PR review
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    # Quota-besparing: skip pushes die alleen non-code-bestanden raken.
+    # Een MIXED push (code + markdown) triggert wel — er moet alleen één
+    # gewijzigd bestand zijn dat NIET in deze lijst staat.
+    # Bewust NIET geskipt: .github/** (workflows = supply-chain-relevant).
+    paths-ignore:
+      - '**.md'
+      - '**.lock'
+      - 'package-lock.json'
+      - 'bun.lockb'
+      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CODEOWNERS'
 
 # Eén review-run per PR tegelijk. Een nieuwe push (synchronize) annuleert de
 # nog lopende run, zodat er nooit twee runs naast elkaar een review posten.
