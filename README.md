@@ -54,14 +54,26 @@ geen API-kosten. De identiteit `claude[bot]` komt van de **Claude GitHub App**.
 
 ## Skills aanpassen
 
-Alles in `skills/*.md` is fair game. Voeg toe, pas aan, verwijder. Voorbeelden:
+Alles in `skills/*.md` is fair game. Voeg toe, pas aan, verwijder. De huidige set:
 
 - `01-general.md` — algemene review-aanpak
-- `02-security.md` — security checks (incl. HR-specifieke PII)
-- `03-typescript.md` — TS gotchas
-- `04-react.md` — React valkuilen
-- `05-database.md` — Prisma/SQL migraties & queries
-- `06-tests.md` — wat er in tests mis kan zijn
+- `02-security.md` — security & auth (PII, IDOR, auth-volgorde, timing-safe compare, sessie-invalidatie)
+- `03-typescript.md` — TypeScript-valkuilen
+- `04-react.md` — React-valkuilen
+- `05-database.md` — Prisma/SQL migraties & queries (N+1, tenant-filter)
+- `06-tests.md` — test-coverage & test-kwaliteit
+- `07-mobile.md` — mobile-first / responsive
+- `08-design-principles.md` — DRY, SRP, SOLID, KISS, YAGNI
+- `09-gdpr-avg.md` — GDPR/AVG / privacy
+- `10-accessibility.md` — toegankelijkheid (WCAG 2.1 AA)
+- `11-nextjs.md` — Next.js App Router (server/client, caching, server actions)
+- `12-error-handling.md` — error handling & observability
+- `13-api-design.md` — API & server-action-ontwerp
+- `14-forms.md` — forms & validatie
+- `15-live-gang.md` — go-live-triage (opent issues)
+- `16-file-storage.md` — file-/storage-security (path-traversal, download-authz, DB↔storage)
+- `17-datetime.md` — datum/tijd/tijdzone-correctheid
+- `18-concurrency.md` — concurrency & verloren updates
 
 Workflow van wijzigen → effect: edit → `git push` in deze repo → volgende PR
 in elke target repo gebruikt de nieuwe skills automatisch.
@@ -77,7 +89,7 @@ werk; bij meer targets later kun je overstappen op een reusable workflow.)
 
 ## Kosten
 
-**Nul.** De OAuth token gebruikt je bestaande Claude Code Max subscription.
+**Nul.** De OAuth token gebruikt je bestaande Claude-abonnement (Pro of Max).
 GitHub Actions minutes voor private repos: ~30 sec per review, ruim binnen
 de free tier.
 

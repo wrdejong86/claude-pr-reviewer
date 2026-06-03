@@ -164,14 +164,28 @@ Werkt het? 🎉 Klaar. Je kunt de test-PR weer sluiten.
 
 ## 4. Gedrag van de bot aanpassen (skills)
 
-Alle reviewregels staan in `skills/*.md` in de reviewer-repo. Voorbeelden:
+Alle reviewregels staan in `skills/*.md` in de reviewer-repo. De huidige set:
 
 | Bestand | Onderwerp |
 |---------|-----------|
 | `01-general.md` | algemene review-aanpak |
-| `02-security.md` | security & PII |
-| `05-database.md` | migraties & queries |
+| `02-security.md` | security & auth (PII, IDOR, auth-volgorde, timing-safe) |
+| `03-typescript.md` | TypeScript-valkuilen |
+| `04-react.md` | React-valkuilen |
+| `05-database.md` | Prisma/SQL migraties & queries |
+| `06-tests.md` | test-coverage & test-kwaliteit |
+| `07-mobile.md` | mobile-first / responsive |
+| `08-design-principles.md` | DRY, SRP, SOLID, KISS, YAGNI |
+| `09-gdpr-avg.md` | GDPR/AVG / privacy |
+| `10-accessibility.md` | toegankelijkheid (WCAG 2.1 AA) |
+| `11-nextjs.md` | Next.js App Router |
+| `12-error-handling.md` | error handling & observability |
+| `13-api-design.md` | API & server-action-ontwerp |
+| `14-forms.md` | forms & validatie |
 | `15-live-gang.md` | go-live-aandachtspunten (opent issues) |
+| `16-file-storage.md` | file-/storage-security (path-traversal, download-authz) |
+| `17-datetime.md` | datum/tijd/tijdzone-correctheid |
+| `18-concurrency.md` | concurrency & verloren updates |
 
 **Aanpassen:** edit een `.md`-bestand → commit & push naar de reviewer-repo's
 `main`. De **volgende** PR-review in elke target-repo gebruikt het direct. Je
