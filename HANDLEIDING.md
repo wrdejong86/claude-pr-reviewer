@@ -1,4 +1,4 @@
-# Handleiding — Review bot opzetten (voor Dennie)
+# Handleiding — Review bot opzetten
 
 Deze handleiding legt stap voor stap uit hoe je de **PR-review-bot** vanaf nul
 opzet. De bot reviewt automatisch elke pull request met Claude en plaatst een
@@ -15,7 +15,7 @@ Er zijn twee soorten repo's:
 
 ```
 ┌────────────────────────────┐        ┌────────────────────────────┐
-│  claude-pr-reviewer         │        │  target-repo (bv. hr-hub)  │
+│  claude-pr-reviewer         │        │  target-repo (jouw app)    │
 │  (de "hersenen", PUBLIEK)   │        │                            │
 │                             │        │  .github/workflows/        │
 │  skills/*.md  ← reviewregels│◄───────┤    claude-review.yml       │
@@ -110,7 +110,7 @@ Wil je de skills in een eigen repo beheren? Fork of kopieer
 > ophalen (de checkout gebruikt geen token). Er staan geen geheimen in deze repo —
 > alleen review-instructies — dus publiek is prima.
 
-Onthoud de volledige naam `eigenaar/repo` (bv. `dennie/claude-pr-reviewer`).
+Onthoud de volledige naam `eigenaar/repo` (bv. `<jouw-account>/claude-pr-reviewer`).
 
 ---
 

@@ -9,7 +9,7 @@ Een GitHub-bot die elke PR automatisch reviewt met Claude — gebruikt jouw
 
 ```
 ┌──────────────────────────────┐    ┌──────────────────────────────┐
-│   claude-pr-reviewer (deze)  │    │   target repo (hr-hub etc.)  │
+│   claude-pr-reviewer (deze)  │    │   target repo (jouw app)     │
 │                              │    │                              │
 │   skills/*.md  ← brein       │    │   .github/workflows/         │
 │   templates/   ← workflow    │    │     claude-review.yml        │
@@ -21,7 +21,7 @@ Een GitHub-bot die elke PR automatisch reviewt met Claude — gebruikt jouw
         └───── deze repo uit voor de skills ────┘
 ```
 
-**Voordeel**: target repos (hr-hub etc.) bevatten één klein workflow-bestand.
+**Voordeel**: target repos bevatten één klein workflow-bestand.
 Alles wat met reviewen te maken heeft — skills, prompt, gedrag — leeft hier.
 Skills aanpassen = push naar deze repo, geen wijziging in target repos nodig.
 
@@ -105,11 +105,11 @@ de free tier.
 - **Review is te oppervlakkig** → maak skills specifieker, of voeg toe aan
   `claude_args` in de workflow: `--model claude-opus-4-7` voor diepere review
   (kost meer van je abonnement-quota).
-- **Bot post dezelfde review twee keer voor één commit** → gediagnosticeerd
-  op PR #279 (hr-hub): drie identieke reviews binnen één run — het model
-  postte de review meerdere keren ("voor de zekerheid"). Een *nieuwe* comment
-  per push is prima; alleen dezelfde review dubbel voor dezelfde commit is de
-  bug. Fix in `templates/claude-review.yml`:
+- **Bot post dezelfde review twee keer voor één commit** → kan gebeuren
+  doordat het model de review meerdere keren post ("voor de zekerheid"), of
+  doordat twee runs overlappen. Een *nieuwe* comment per push is prima; alleen
+  dezelfde review dubbel voor dezelfde commit is de bug. Fix in
+  `templates/claude-review.yml`:
   (1) elke review begint met een verborgen marker met de commit-SHA
   (`<!-- claude-review:<sha> -->`); STEP 4 laat de bot eerst checken of er al
   een review voor deze commit staat → zo ja, niet opnieuw posten. Nieuwe push
