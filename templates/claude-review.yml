@@ -59,14 +59,19 @@ jobs:
             2. Optional inline comments via mcp__github_inline_comment.
             3. Optional live-gang issues via `gh issue create` (STEP 5).
 
-            STEP 1 — Load skills:
-            Read every `.md` file in `.reviewer/skills/` (skip `README.md`)
-            using the Read tool. These are your review instructions. Apply
-            only the skills relevant to what this PR changes.
-
-            STEP 2 — Read the PR:
-              - `gh pr view ${{ github.event.pull_request.number }}` for title/body
+            STEP 1 — Read the PR FIRST (so you know what changed):
+              - `gh pr view ${{ github.event.pull_request.number }} --json title,body`
+                for the title/description
               - `gh pr diff ${{ github.event.pull_request.number }}` for the diff
+
+            STEP 2 — Load skills in ONE command (do NOT read files one by one):
+            Run exactly this single command:
+              cat .reviewer/skills/[0-9]*.md
+            That loads all skill files at once. Do NOT `ls` the folder first
+            and do NOT open each file with separate Read calls — that adds ~15
+            extra round-trips and is the main thing slowing reviews down.
+            These are your review instructions; apply only the skills relevant
+            to what this PR changes (you already know that from STEP 1).
 
             STEP 3 — Review:
             Reference every finding with `file:line`. Never invent code that
@@ -92,8 +97,11 @@ jobs:
             You have TWO different commenting tools. Do NOT confuse them:
 
             A) `mcp__github_comment__update_claude_comment` — the progress
-               tracker. ONLY short status ("Loading skills", "Posted ✓").
-               The full review does NOT go here, and it has NO marker.
+               tracker. OPTIONAL and to be used sparingly: at most ONE short
+               status update is enough. Do NOT narrate every step ("Loading
+               skills", "Reading diff", ...) — each update is a round-trip
+               that slows the review down. The full review does NOT go here,
+               and it has NO marker.
 
             B) `gh pr comment <pr> --body "..."` — the review comment.
                THIS IS WHERE THE FULL REVIEW GOES, as a separate comment.
