@@ -1,7 +1,9 @@
 # Claude PR Reviewer
 
 Een GitHub-bot die elke PR automatisch reviewt met Claude — gebruikt jouw
-**bestaande Claude Code Max abonnement** via OAuth, dus geen API-kosten.
+**bestaande Claude-abonnement** (Pro of Max) via OAuth, dus geen API-kosten.
+
+> 🆕 Nieuw opzetten? Zie de stap-voor-stap **[HANDLEIDING.md](HANDLEIDING.md)**.
 
 ## Architectuur
 
@@ -23,75 +25,32 @@ Een GitHub-bot die elke PR automatisch reviewt met Claude — gebruikt jouw
 Alles wat met reviewen te maken heeft — skills, prompt, gedrag — leeft hier.
 Skills aanpassen = push naar deze repo, geen wijziging in target repos nodig.
 
-## Eenmalige setup
+## Eenmalige setup (kort)
 
-### Stap 1 — Claude Code OAuth token
+> De volledige stap-voor-stap uitleg met schermen en troubleshooting staat in
+> **[HANDLEIDING.md](HANDLEIDING.md)**. Dit is de samenvatting.
 
-Op je Mac:
-```
-brew install node
-npm install -g @anthropic-ai/claude-code
-claude setup-token
-```
-Browser → inloggen met jouw eigen Claude Max account → token kopiëren
-(`sk-ant-oat01-...`). Bewaar tijdelijk veilig.
+De bot draait op een **Claude-abonnement** (Pro of Max) via een OAuth-token —
+geen API-kosten. De identiteit `claude[bot]` komt van de **Claude GitHub App**.
 
-### Stap 2 — Bot GitHub account
+1. **OAuth-token** — `npm install -g @anthropic-ai/claude-code`, dan
+   `claude setup-token`. De token (`sk-ant-oat01-...`) wordt het repo-secret
+   `CLAUDE_CODE_OAUTH_TOKEN`.
+2. **Claude GitHub App installeren** op je account + de target-repo's via
+   `/install-github-app` (of <https://github.com/apps/claude>). Dit geeft de
+   bot de rechten om op PR's te reageren en kan het secret meteen zetten.
+3. **Reviewer-repo publiek houden.** Deze repo bevat alleen review-instructies
+   en moet **publiek** zijn, zodat de workflow de skills zonder token kan
+   ophalen.
+4. **Per target-repo:** kopieer `templates/claude-review.yml` naar
+   `.github/workflows/claude-review.yml`, zorg dat het secret
+   `CLAUDE_CODE_OAUTH_TOKEN` er staat, en push naar `main`.
+5. **Testen:** open een test-PR → binnen ~1 min verschijnt een review van
+   `claude[bot]`.
 
-Bot bestaat al: username `codereviewer1986`, e-mail `scanner@smbdj.nl`.
-
-Personal Access Token (ingelogd als bot):
-- https://github.com/settings/tokens?type=beta → Generate new token
-- Naam: `pr-review-bot`, expiration: 1 year
-- Repository access: **All repositories** (zodat de bot zowel deze repo
-  als target repos kan lezen)
-- Permissions:
-  - Pull requests: Read and write
-  - Contents: Read-only
-  - Issues: Read and write
-
-### Stap 3 — Push deze repo naar GitHub
-
-Op je Mac, ingelogd als jezelf in `gh`:
-```
-cd ~/Desktop/Controlroom/claude-pr-reviewer
-git init -b main
-git add .
-git commit -m "Initial reviewer setup"
-gh repo create claude-pr-reviewer --private --source=. --push
-```
-
-### Stap 4 — Nodig bot uit in claude-pr-reviewer
-
-Zodat de workflow van target repos de skills kan checkout-en:
-https://github.com/wrdejong86/claude-pr-reviewer/settings/access →
-**Add people** → `codereviewer1986` → Read access is genoeg.
-
-### Stap 5 — Voor elke target repo (zoals hr-hub)
-
-A. **Nodig bot uit als collaborator** (Write):
-   https://github.com/wrdejong86/<target>/settings/access
-
-B. **Kopieer template workflow** naar `.github/workflows/claude-review.yml`:
-   ```
-   cp ~/Desktop/Controlroom/claude-pr-reviewer/templates/claude-review.yml \
-      ~/Desktop/Controlroom/<target>/.github/workflows/
-   ```
-
-C. **Voeg secrets toe** aan de target repo:
-   https://github.com/wrdejong86/<target>/settings/secrets/actions
-   - `CLAUDE_CODE_OAUTH_TOKEN` = token uit stap 1
-   - `BOT_GITHUB_TOKEN`        = PAT uit stap 2
-
-D. **Commit + push** de workflow naar de target repo's main branch.
-
-E. **Log in als bot** en accepteer de uitnodiging via
-   https://github.com/notifications.
-
-### Stap 6 — Test
-
-Open een test-PR in de target repo. Binnen ~1 minuut zie je een review-comment
-van `codereviewer1986`.
+> **Niet meer nodig:** een apart bot-account (`codereviewer1986`) of een
+> Personal Access Token (`BOT_GITHUB_TOKEN`). Dat was de oude opzet; de Claude
+> GitHub App regelt de identiteit nu.
 
 ## Skills aanpassen
 
@@ -126,13 +85,14 @@ de free tier.
 
 - **Workflow draait maar geen review** → check Actions log; meestal mist een
   secret of is de OAuth token verlopen (`claude setup-token` opnieuw draaien).
-- **403 bij checkout van reviewer repo** → bot is niet uitgenodigd in
-  claude-pr-reviewer (zie stap 4).
-- **403 bij PR comment** → bot is niet uitgenodigd in target repo, of PAT mist
-  Pull requests: write permission.
+- **Skills niet gevonden / 403 bij checkout van reviewer repo** → de
+  reviewer-repo is niet **publiek**, of de `repository:`-regel in de workflow
+  wijst naar de verkeerde plek.
+- **Bot reageert als `github-actions[bot]` i.p.v. `claude[bot]`** → de Claude
+  GitHub App is niet op die repo geïnstalleerd.
 - **Review is te oppervlakkig** → maak skills specifieker, of voeg toe aan
   `claude_args` in de workflow: `--model claude-opus-4-7` voor diepere review
-  (kost meer van je Max-quota).
+  (kost meer van je abonnement-quota).
 - **Bot post dezelfde review twee keer voor één commit** → gediagnosticeerd
   op PR #279 (hr-hub): drie identieke reviews binnen één run — het model
   postte de review meerdere keren ("voor de zekerheid"). Een *nieuwe* comment
