@@ -133,3 +133,18 @@ de free tier.
 - **Review is te oppervlakkig** → maak skills specifieker, of voeg toe aan
   `claude_args` in de workflow: `--model claude-opus-4-7` voor diepere review
   (kost meer van je Max-quota).
+- **Bot post dezelfde review twee keer voor één commit** → gediagnosticeerd
+  op PR #279 (hr-hub): drie identieke reviews binnen één run — het model
+  postte de review meerdere keren ("voor de zekerheid"). Een *nieuwe* comment
+  per push is prima; alleen dezelfde review dubbel voor dezelfde commit is de
+  bug. Fix in `templates/claude-review.yml`:
+  (1) elke review begint met een verborgen marker met de commit-SHA
+  (`<!-- claude-review:<sha> -->`); STEP 4 laat de bot eerst checken of er al
+  een review voor deze commit staat → zo ja, niet opnieuw posten. Nieuwe push
+  = nieuwe SHA = nieuwe comment, maar dubbel binnen één run kan niet meer.
+  (2) een `concurrency`-guard annuleert overlappende runs voor dezelfde PR.
+  (3) live-gang issues worden nog maar één keer per PR aangemaakt (marker +
+  `gh issue list`-check) i.p.v. bij elke push opnieuw.
+  NB: de comments worden geplaatst door `claude[bot]` (de actie zelf), niet
+  door `codereviewer1986`. Kopieer de bijgewerkte template naar
+  `.github/workflows/claude-review.yml` in elke target repo en push naar main.

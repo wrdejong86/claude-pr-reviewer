@@ -4,6 +4,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+# Eén review-run per PR tegelijk. Een nieuwe push (synchronize) annuleert de
+# nog lopende run, zodat er nooit twee runs naast elkaar een review posten.
+# Dit voorkomt dubbele review-comments bij snel opeenvolgende pushes.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -29,7 +36,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh issue create:*),Bash(ls:*),Bash(cat:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh issue create:*),Bash(gh issue list:*),Bash(ls:*),Bash(cat:*)"
             --disallowedTools "Bash(git:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git rm:*),Edit,Write,MultiEdit,NotebookEdit"
           prompt: |
             You are a READ-ONLY reviewer. You are reviewing pull request
@@ -72,31 +79,58 @@ jobs:
 
             STEP 4 — Post review (READ CAREFULLY):
 
+            A fresh review comment per push is fine and expected. The bug we
+            are killing: posting the SAME review more than once for the SAME
+            commit (this has happened — three identical reviews in a single
+            run). To make that impossible, the review is tagged with the
+            commit SHA and you MUST check for that tag before posting.
+
+            The review body MUST begin with this exact hidden marker on its
+            own first line (invisible when rendered):
+              <!-- claude-review:${{ github.event.pull_request.head.sha }} -->
+
             You have TWO different commenting tools. Do NOT confuse them:
 
-            A) `mcp__github_comment__update_claude_comment` — updates the
-               progress-tracker comment. Use ONLY for short status updates
-               like "Loading skills", "Reading diff", "Review posted ✓".
-               This is NOT where the actual review goes.
+            A) `mcp__github_comment__update_claude_comment` — the progress
+               tracker. ONLY short status ("Loading skills", "Posted ✓").
+               The full review does NOT go here, and it has NO marker.
 
-            B) `gh pr comment <pr> --body "..."` — creates a NEW comment.
-               THIS IS WHERE THE FULL REVIEW MUST GO. It is a separate
-               comment on the PR, visible to the user as the actual review.
+            B) `gh pr comment <pr> --body "..."` — the review comment.
+               THIS IS WHERE THE FULL REVIEW GOES, as a separate comment.
 
-            REQUIRED ACTION:
-            Call `gh pr comment ${{ github.event.pull_request.number }} --body "<your full review>"`
-            ONCE with the complete review text. The review must be a SEPARATE
-            comment from the progress tracker — never inside the tracker.
+            REQUIRED PROCEDURE — follow in order:
+
+            1. Check whether this exact commit was already reviewed:
+               gh pr view ${{ github.event.pull_request.number }} \
+                 --json comments \
+                 --jq '.comments[] | select(.body | contains("<!-- claude-review:${{ github.event.pull_request.head.sha }} -->")) | .url'
+
+            2. If that prints ANY url → the review for this commit is ALREADY
+               posted. STOP. Do NOT post again. STEP 4 is done.
+
+            3. If it prints NOTHING → post the review EXACTLY ONCE:
+               gh pr comment ${{ github.event.pull_request.number }} \
+                 --body "<marker line + your full review>"
+
+            HARD RULES:
+              - Never call `gh pr comment` more than once.
+              - Do NOT re-post "to make sure it went through". If your call
+                returned without an error it succeeded. If genuinely unsure,
+                re-run the check in step 1 — never blindly re-post.
+              - Do NOT paste the full review into the progress tracker.
 
             Optionally also use `mcp__github_inline_comment__create_inline_comment`
             (with confirmed: true) for specific code findings tied to lines.
+            Post each distinct inline comment at most once.
 
-            Verify: after calling gh pr comment, you should see a new comment
-            appear on the PR (not just an updated progress tracker). If you
-            only updated the tracker, you have NOT posted the review.
+            Verify: after posting, exactly ONE comment carrying the marker
+            `<!-- claude-review:${{ github.event.pull_request.head.sha }} -->`
+            should exist on the PR.
 
             Format of the gh pr comment body:
-            - First line: header listing which skills you applied
+            - First line: the hidden marker
+              `<!-- claude-review:${{ github.event.pull_request.head.sha }} -->`
+            - Then a header listing which skills you applied
             - Then the review grouped by severity (Blocking / Should fix / Nice to have / Positive)
             - Skip categories with nothing to report
             - ALWAYS write the review in Dutch (Nederlands), regardless of
@@ -111,15 +145,34 @@ jobs:
             confirmation ("Posted review").
 
             STEP 5 — Live-gang triage (zie skill 15-live-gang):
-            If the PR introduces anything that needs attention BEFORE going
-            live (new cron, new env vars, new external service, destructive
-            migration, new PII storage, etc.), create a SEPARATE GitHub
-            issue per category using:
+
+            IMPORTANT — triage a PR ONCE, not on every push. This workflow
+            re-runs on every push; recreating the same issues each time would
+            pile up duplicates. So FIRST check whether you already triaged
+            this PR:
+
+              gh issue list --repo ${{ github.repository }} \
+                --label "live-gang" --state open --json number,body \
+                --jq '.[] | select(.body | contains("<!-- live-gang:PR-${{ github.event.pull_request.number }} -->")) | .number'
+
+            If that prints ANY issue number → live-gang triage was already
+            done for this PR on an earlier run. Do NOT create new issues; just
+            re-link the existing ones in the review comment and STOP STEP 5.
+
+            Only if it prints NOTHING: if the PR introduces anything that
+            needs attention BEFORE going live (new cron, new env vars, new
+            external service, destructive migration, new PII storage, etc.),
+            create a SEPARATE GitHub issue per category using:
 
               gh issue create --repo ${{ github.repository }} \
                 --title "🚀 Live-gang: <korte titel>" \
                 --label "live-gang" \
-                --body "<body following the template in 15-live-gang.md>"
+                --body "<!-- live-gang:PR-${{ github.event.pull_request.number }} -->
+            <body following the template in 15-live-gang.md>"
+
+            Every live-gang issue body MUST start with the hidden marker
+            `<!-- live-gang:PR-${{ github.event.pull_request.number }} -->`
+            so re-runs can detect it.
 
             Maximum 5 issues per PR. If nothing is live-gang relevant,
             create no issues. Always include a reference to the originating
