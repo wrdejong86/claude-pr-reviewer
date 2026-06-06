@@ -196,7 +196,24 @@ opgepikt. Zie `skills/README.md` voor het format.
 
 ---
 
-## 5. Wat NIET (meer) nodig is
+## 5. Model kiezen
+
+De bot draait standaard op **Sonnet** — dit staat vast in `claude_args` in de
+workflow. Sonnet houdt het abonnement-verbruik laag; de bot reviewt elke
+PR-push opnieuw met de volledige diff en alle skills.
+
+**Handmatig een diepere review starten (bv. Opus):**
+1. Ga naar GitHub → **Actions** → "Claude PR review"
+2. Klik rechts op **"Run workflow"**
+3. Vul het PR-nummer in en kies het model: `sonnet` / `opus` / `haiku`
+4. Klik **"Run workflow"**
+
+De bot plaatst dan een nieuwe review-comment op die PR met het gekozen model.
+Automatische runs bij PR-pushes blijven altijd op Sonnet.
+
+---
+
+## 6. Wat NIET (meer) nodig is
 
 De oude opzet gebruikte een apart bot-account (`codereviewer1986`) met een
 Personal Access Token. **Dat is niet meer nodig.** De Claude GitHub App regelt
@@ -213,7 +230,7 @@ bot-account of PAT (`BOT_GITHUB_TOKEN`) aan te maken.
 | Skills niet gevonden / 403 bij checkout | De reviewer-repo is niet **publiek**, of de `repository:`-regel (stap 4B) wijst naar de verkeerde plek. |
 | Bot reageert als `github-actions[bot]` i.p.v. `claude[bot]` | De **Claude GitHub App** is niet op die repo geïnstalleerd (stap 2). |
 | Helemaal geen workflow-run | Het bestand staat niet op de **main**-branch van de target-repo, of de PR is een **draft** (draft-PR's worden overgeslagen), of de PR wijzigt alleen `*.md` / lockfiles / `.gitignore` / `LICENSE` (bewust geskipt via `paths-ignore` om quota te sparen). |
-| Review te oppervlakkig | Maak de skills specifieker, of voeg in de workflow toe aan `claude_args`: `--model claude-opus-4-7` (gebruikt meer van je abonnement-quota). |
+| Review te oppervlakkig | Maak de skills specifieker, of gebruik de handmatige `workflow_dispatch`-trigger om de PR op Opus te reviewen (zie sectie "Model kiezen" hierboven). |
 | Dezelfde review dubbel voor één commit | Mag niet meer gebeuren (recent gefixt met een SHA-marker). Een **nieuwe** comment per push is wél normaal en gewenst. Draait de target-repo nog een oude workflow? Kopieer de nieuwste `templates/claude-review.yml` opnieuw. |
 
 ---

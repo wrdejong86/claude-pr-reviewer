@@ -87,6 +87,19 @@ betekent: edit hier, daarna in elke target repo het overeenkomstige
 `.github/workflows/claude-review.yml` updaten. (Voor één target nu niet veel
 werk; bij meer targets later kun je overstappen op een reusable workflow.)
 
+## Model
+
+De bot draait standaard op **Sonnet** (`--model sonnet` in `claude_args`).
+Sonnet houdt de kosten laag — de bot draait op jóuw abonnement en reviewt
+elke PR-push inclusief de volledige diff en alle skills.
+
+**Handmatig een ander model kiezen:**
+Ga naar GitHub → Actions → "Claude PR review" → **Run workflow**. Vul het
+PR-nummer in en kies het gewenste model (sonnet / opus / haiku). Handig voor
+grote of kritieke PRs die een diepere Opus-review verdienen.
+
+Automatische runs bij PR-pushes gebruiken altijd Sonnet.
+
 ## Kosten
 
 **Nul.** De OAuth token gebruikt je bestaande Claude-abonnement (Pro of Max).
@@ -106,9 +119,9 @@ de free tier.
   wijst naar de verkeerde plek.
 - **Bot reageert als `github-actions[bot]` i.p.v. `claude[bot]`** → de Claude
   GitHub App is niet op die repo geïnstalleerd.
-- **Review is te oppervlakkig** → maak skills specifieker, of voeg toe aan
-  `claude_args` in de workflow: `--model claude-opus-4-7` voor diepere review
-  (kost meer van je abonnement-quota).
+- **Review is te oppervlakkig** → maak skills specifieker, of gebruik de
+  handmatige `workflow_dispatch`-trigger om de PR op Opus te reviewen (zie
+  sectie "Model" hierboven).
 - **Bot post dezelfde review twee keer voor één commit** → kan gebeuren
   doordat het model de review meerdere keren post ("voor de zekerheid"), of
   doordat twee runs overlappen. Een *nieuwe* comment per push is prima; alleen
