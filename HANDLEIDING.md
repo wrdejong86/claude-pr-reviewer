@@ -7,6 +7,12 @@ review-comment (in het Nederlands). Hij draait op een **Claude-abonnement**
 
 > Tijd: ~20 minuten. Je hoeft geen code te schrijven.
 
+> 🔔 **Heb je 'm al draaien? Check de
+> [CHANGELOG.md](CHANGELOG.md).** Daar staat wat er recent is verbeterd en
+> of je iets moet doen om de nieuwste versie te krijgen (meestal: het
+> workflow-bestand opnieuw kopiëren). Skills worden altijd automatisch
+> live opgehaald.
+
 ---
 
 ## 1. Hoe het in elkaar zit (kort)

@@ -5,6 +5,13 @@ Een GitHub-bot die elke PR automatisch reviewt met Claude — gebruikt jouw
 
 > 🆕 Nieuw opzetten? Zie de stap-voor-stap **[HANDLEIDING.md](HANDLEIDING.md)**.
 
+> 🔔 **Update 2026-06-17:** snellere & goedkopere reviews door skills via
+> een pre-step in te laden (omzeilt een bug in `claude-code-action@v1`). Als
+> je de bot al in een eigen repo draait, **kopieer dan
+> [`templates/claude-review.yml`](templates/claude-review.yml) opnieuw** naar
+> `.github/workflows/claude-review.yml` en push naar `main`. Alle wijzigingen
+> staan in **[CHANGELOG.md](CHANGELOG.md)**.
+
 ## Architectuur
 
 ```
