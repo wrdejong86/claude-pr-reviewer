@@ -75,6 +75,23 @@ jobs:
           repository: wrdejong86/claude-pr-reviewer
           path: .reviewer
 
+      # Skills hier in één keer inline laden, zodat ze als string in de prompt
+      # gezet kunnen worden. Reden: anthropics/claude-code-action@v1 negeert de
+      # --allowedTools / --disallowedTools in claude_args (issue #690 op de
+      # actie). Daardoor heeft het model standaard de Read-tool en opent het de
+      # 18 skill-bestanden alsnog één voor één — ~15 extra tool-rondjes per
+      # review. Door de skills hieronder al in de prompt te zetten, hoeft het
+      # model ze niet meer op te halen: 0 rondjes voor laden, geen
+      # afhankelijkheid van of het model `cat` correct uitvoert.
+      - name: Inline reviewer skills voor de prompt
+        id: skills
+        run: |
+          {
+            echo 'content<<SKILLS_EOF'
+            cat .reviewer/skills/[0-9]*.md
+            echo 'SKILLS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -109,22 +126,24 @@ jobs:
                 for the title/description
               - `gh pr diff ${{ env.PR_NUMBER }}` for the diff
 
-            STEP 2 — Load skills in ONE command (do NOT read files one by one):
-            Run exactly this single command:
-              cat .reviewer/skills/[0-9]*.md
-            This loads the FULL content of EVERY skill at once — you lose
-            nothing versus opening them individually. Do NOT `ls` the folder
-            first and do NOT open each file with separate Read calls; that
-            adds ~15 extra round-trips and is the main thing slowing reviews
-            down.
+            STEP 2 — Use the reviewer skills (ALREADY loaded into this prompt):
 
-            These skills (numbered 01 upward) are your review instructions and
-            you MUST keep using them. Go through the diff against EVERY skill
-            and apply each one that is relevant to what this PR changes. Skip a
-            skill ONLY when it is genuinely not applicable (e.g. no React
-            changes -> skip the React skill); never skip a relevant skill to
-            save effort. In the review header, list exactly which skills you
-            applied (see Format below) so coverage stays verifiable.
+            The reviewer skills are pre-loaded between the START/END markers
+            below. They contain the FULL content of every skill file. You do
+            NOT need to fetch them — do NOT run `cat`, `ls`, Read or any other
+            tool to open `.reviewer/skills/`. Doing so wastes turns and money.
+
+            You MUST apply these skills. Walk through the diff against EVERY
+            skill below; apply each one that is relevant to what this PR
+            changes. Skip a skill ONLY when it is genuinely not applicable
+            (e.g. no React changes -> skip the React skill); never skip a
+            relevant skill to save effort. In the review header, list
+            exactly which skills you applied (see Format below) so coverage
+            stays verifiable.
+
+            ================ REVIEWER SKILLS — START ================
+            ${{ steps.skills.outputs.content }}
+            ================ REVIEWER SKILLS — END ================
 
             STEP 3 — Review:
             Reference every finding with `file:line`. Never invent code that
