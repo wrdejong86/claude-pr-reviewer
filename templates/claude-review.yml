@@ -231,10 +231,15 @@ jobs:
           fi
           COST=$(jq -r '.total_cost_usd // "?"' out.json)
           DUR=$(jq -r '.duration_ms // 0' out.json)
+          TURNS=$(jq -r '.num_turns // "?"' out.json)
+          TOK_IN=$(jq -r '.usage.input_tokens // 0' out.json)
+          TOK_OUT=$(jq -r '.usage.output_tokens // 0' out.json)
+          TOK_CR=$(jq -r '.usage.cache_read_input_tokens // 0' out.json)
+          TOK_CC=$(jq -r '.usage.cache_creation_input_tokens // 0' out.json)
           # Ook naar stdout, zodat kosten scriptbaar uit de run-logs te halen zijn.
-          echo "review-metrics: cost=\$$COST model=$REVIEW_MODEL model_duration_s=$((DUR/1000))"
+          echo "review-metrics: cost=\$$COST model=$REVIEW_MODEL model_duration_s=$((DUR/1000)) turns=$TURNS tok_in=$TOK_IN tok_out=$TOK_OUT cache_read=$TOK_CR cache_create=$TOK_CC"
           echo "### 🤖 Review-bot" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Model: \`$REVIEW_MODEL\` · Kosten: \$$COST · Modelduur: $((DUR/1000))s" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Model: \`$REVIEW_MODEL\` · Kosten: \$$COST · Modelduur: $((DUR/1000))s · Turns: $TURNS" >> "$GITHUB_STEP_SUMMARY"
 
       # ── Output parsen, live-gang issues aanmaken, review 1× posten. ──
       - name: Post review + live-gang issues
