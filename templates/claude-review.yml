@@ -231,6 +231,8 @@ jobs:
           fi
           COST=$(jq -r '.total_cost_usd // "?"' out.json)
           DUR=$(jq -r '.duration_ms // 0' out.json)
+          # Ook naar stdout, zodat kosten scriptbaar uit de run-logs te halen zijn.
+          echo "review-metrics: cost=\$$COST model=$REVIEW_MODEL model_duration_s=$((DUR/1000))"
           echo "### 🤖 Review-bot" >> "$GITHUB_STEP_SUMMARY"
           echo "- Model: \`$REVIEW_MODEL\` · Kosten: \$$COST · Modelduur: $((DUR/1000))s" >> "$GITHUB_STEP_SUMMARY"
 
