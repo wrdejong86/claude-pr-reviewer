@@ -11,7 +11,42 @@ Belangrijke updates aan de review bot. Nieuwste bovenaan.
 
 ---
 
+## 2026-07-03 — 🔧 v2: agentische actie vervangen door review-pijplijn
+
+**Wat:** De workflow gebruikt niet langer `anthropics/claude-code-action@v1`
+(een agentische loop met tools), maar een rechte pijplijn: bash verzamelt de
+context (diff + inhoud gewijzigde bestanden + alle skills), **één**
+`claude -p`-call zonder enige tool schrijft de review, en bash post het
+resultaat en maakt live-gang issues aan.
+
+**Waarom:** Meting over 20 reviews toonde gem. **$2,37** quota-equivalent en
+**23 tool-rondjes** per review — het model bleef vrij door de repo zwerven en
+alle guardrails (read-only, exact 1× posten) hingen aan prompt-beloftes die
+de actie-bug (#690) deels omzeilde. De pijplijn maakt die garanties
+structureel:
+
+- **Read-only gegarandeerd** — het model heeft nul tools.
+- **Dubbelpost onmogelijk** — bash post exact één keer, met SHA-marker.
+- **Re-run op zelfde commit = $0** — dedup-gate vóór de model-call.
+- **Kosten** ~$0,15–0,25/review (10× goedkoper), duur ~1,5 min.
+
+**Let op (gedragswijziging):**
+- Comments verschijnen nu als **`github-actions[bot]`** i.p.v. `claude[bot]`.
+- De **Claude GitHub App is voor deze bot niet meer nodig** (alleen het
+  `CLAUDE_CODE_OAUTH_TOKEN`-secret). Inline-comments per regel vervallen;
+  alles staat in de hoofdreview.
+- Kosten per review staan voortaan in de **Actions job summary**.
+
+**Actie nodig?** Ja: kopieer `templates/claude-review.yml` opnieuw naar
+`.github/workflows/claude-review.yml` in elke target-repo en push naar `main`.
+
+---
+
 ## 2026-06-17 — 🔧 Skills inline via pre-step (omzeil v1-actie-bug)
+
+> **Status: achterhaald.** Meting over 20 reviews toonde dat dit niet hielp
+> (gem. $2,37, 23 turns — het model bleef zelf de repo verkennen). Vervangen
+> door de v2-pijplijn van 2026-07-03 hierboven.
 
 **Wat:** De skills worden nu in een **pre-step** (`Inline reviewer skills voor
 de prompt`) ingeladen en direct als string in de prompt gezet, in plaats van

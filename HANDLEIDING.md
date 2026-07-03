@@ -72,30 +72,15 @@ kopieer de token (begint met `sk-ant-oat01-...`).
 
 ---
 
-### Stap 2 — De Claude GitHub App installeren
+### Stap 2 — ~~De Claude GitHub App installeren~~ (vervallen sinds v2)
 
-Dit is wat ervoor zorgt dat de bot als **`claude[bot]`** op PR's mag reageren.
+**Deze stap is niet meer nodig.** Sinds de v2-pijplijn (juli 2026) post de
+workflow de review zelf met het ingebouwde GitHub-token; comments verschijnen
+als **`github-actions[bot]`**. De Claude GitHub App was alleen nodig voor de
+oude agentische opzet.
 
-**Makkelijkste manier** — in een willekeurige map met een GitHub-repo:
-
-```bash
-claude
-/install-github-app
-```
-
-De wizard helpt je met:
-1. De **Claude GitHub App** installeren op je account/organisatie en de
-   gewenste repo's (<https://github.com/apps/claude>).
-2. Het secret **`CLAUDE_CODE_OAUTH_TOKEN`** aanmaken in die repo's (plak de
-   token uit stap 1).
-
-**Lukt `/install-github-app` niet?** Doe het handmatig:
-1. Ga naar <https://github.com/apps/claude> → **Install** → kies je account/org
-   en de repo's die je wilt laten reviewen.
-2. Voeg het secret zelf toe (zie stap 4C).
-
-> Zonder deze app reageert de bot als `github-actions[bot]` i.p.v. `claude[bot]`,
-> of kan hij helemaal niet posten. **Deze stap is verplicht.**
+Het enige dat de bot nodig heeft is het secret **`CLAUDE_CODE_OAUTH_TOKEN`**
+(zie stap 4C). Ga door naar stap 3.
 
 ---
 
@@ -161,8 +146,9 @@ target-repo.
 ### Stap 5 — Testen
 
 1. Open een **test-PR** in de target-repo (bv. een kleine wijziging).
-2. Binnen ~1 minuut verschijnt een review-comment van **`claude[bot]`**.
-3. Check eventueel de voortgang onder **Actions → Claude PR review**.
+2. Binnen ~2 minuten verschijnt een review-comment van **`github-actions[bot]`**.
+3. Check eventueel de voortgang onder **Actions → Claude PR review** — in de
+   job summary zie je ook wat de review aan abonnement-quota kostte.
 
 Werkt het? 🎉 Klaar. Je kunt de test-PR weer sluiten.
 
@@ -221,10 +207,13 @@ Automatische runs bij PR-pushes blijven altijd op Sonnet.
 
 ## 6. Wat NIET (meer) nodig is
 
-De oude opzet gebruikte een apart bot-account (`codereviewer1986`) met een
-Personal Access Token. **Dat is niet meer nodig.** De Claude GitHub App regelt
-de identiteit en de schrijfrechten. Negeer oude instructies die je vragen een
-bot-account of PAT (`BOT_GITHUB_TOKEN`) aan te maken.
+- Een apart **bot-account** (`codereviewer1986`) met Personal Access Token
+  (`BOT_GITHUB_TOKEN`) — de allereerste opzet.
+- De **Claude GitHub App** — was nodig voor de oude agentische actie; sinds
+  v2 post de workflow zelf als `github-actions[bot]`.
+
+Het enige dat nodig is: het secret **`CLAUDE_CODE_OAUTH_TOKEN`** per
+target-repo (of op organisatie-niveau).
 
 ---
 
@@ -232,20 +221,23 @@ bot-account of PAT (`BOT_GITHUB_TOKEN`) aan te maken.
 
 | Symptoom | Oorzaak / oplossing |
 |----------|---------------------|
-| Workflow draait, maar geen review | Check de **Actions**-log. Meestal mist het secret `CLAUDE_CODE_OAUTH_TOKEN`, of de token is verlopen → draai `claude setup-token` opnieuw en update het secret. |
+| Workflow draait, maar geen review ("Lege model-output") | Check de **Actions**-log. Meestal mist het secret `CLAUDE_CODE_OAUTH_TOKEN`, of de token is verlopen → draai `claude setup-token` opnieuw en update het secret. |
 | Skills niet gevonden / 403 bij checkout | De reviewer-repo is niet **publiek**, of de `repository:`-regel (stap 4B) wijst naar de verkeerde plek. |
-| Bot reageert als `github-actions[bot]` i.p.v. `claude[bot]` | De **Claude GitHub App** is niet op die repo geïnstalleerd (stap 2). |
+| Review komt van `github-actions[bot]` | Normaal sinds v2 — de workflow post zelf. |
 | Helemaal geen workflow-run | Het bestand staat niet op de **main**-branch van de target-repo, of de PR is een **draft** (draft-PR's worden overgeslagen), of de PR wijzigt alleen `*.md` / lockfiles / `.gitignore` / `LICENSE` (bewust geskipt via `paths-ignore` om quota te sparen). |
+| Run stopt direct met "al gereviewd" | Bewust: deze commit heeft al een review (dedup-gate). Push een nieuwe commit voor een nieuwe review. |
 | Review te oppervlakkig | Maak de skills specifieker, of gebruik de handmatige `workflow_dispatch`-trigger om de PR op Opus te reviewen (zie sectie "Model kiezen" hierboven). |
-| Dezelfde review dubbel voor één commit | Mag niet meer gebeuren (recent gefixt met een SHA-marker). Een **nieuwe** comment per push is wél normaal en gewenst. Draait de target-repo nog een oude workflow? Kopieer de nieuwste `templates/claude-review.yml` opnieuw. |
+| Dezelfde review dubbel voor één commit | Kan sinds v2 niet meer (bash post exact 1×). Zie je het toch → die repo draait een oude workflow-versie; kopieer de nieuwste `templates/claude-review.yml`. |
 
 ---
 
 ## 7. Kosten
 
-**Nul.** De review draait op je Claude-abonnement (Pro/Max) via de OAuth-token.
-GitHub Actions-minuten: ~30 sec per review, ruim binnen de free tier (ook voor
-private repo's).
+**Geen API-kosten.** De review draait op je Claude-abonnement (Pro/Max) via
+de OAuth-token. Elke review verbruikt wél abonnement-quota: sinds v2 typisch
+**~$0,15–0,25 equivalent** (één model-call; exacte bedrag per review staat in
+de Actions job summary). GitHub Actions-minuten: ~2 min per review, ruim
+binnen de free tier (ook voor private repo's).
 
 ---
 

@@ -5,12 +5,14 @@ Een GitHub-bot die elke PR automatisch reviewt met Claude — gebruikt jouw
 
 > 🆕 Nieuw opzetten? Zie de stap-voor-stap **[HANDLEIDING.md](HANDLEIDING.md)**.
 
-> 🔔 **Update 2026-06-17:** snellere & goedkopere reviews door skills via
-> een pre-step in te laden (omzeilt een bug in `claude-code-action@v1`). Als
-> je de bot al in een eigen repo draait, **kopieer dan
+> 🔔 **Update 2026-07-03 (v2):** de bot is omgebouwd van een agentische
+> actie naar een **review-pijplijn** — één model-call zonder tools, posten
+> gebeurt door de workflow zelf. ~10× goedkoper per review, sneller, en
+> read-only/éénmalig-posten zijn nu structureel gegarandeerd. Draai je de
+> bot al ergens? **Kopieer
 > [`templates/claude-review.yml`](templates/claude-review.yml) opnieuw** naar
-> `.github/workflows/claude-review.yml` en push naar `main`. Alle wijzigingen
-> staan in **[CHANGELOG.md](CHANGELOG.md)**.
+> `.github/workflows/claude-review.yml` en push naar `main`. Details in
+> **[CHANGELOG.md](CHANGELOG.md)**.
 
 ## Architectuur
 
@@ -38,26 +40,25 @@ Skills aanpassen = push naar deze repo, geen wijziging in target repos nodig.
 > **[HANDLEIDING.md](HANDLEIDING.md)**. Dit is de samenvatting.
 
 De bot draait op een **Claude-abonnement** (Pro of Max) via een OAuth-token —
-geen API-kosten. De identiteit `claude[bot]` komt van de **Claude GitHub App**.
+geen API-kosten. Sinds v2 (2026-07) post de workflow zelf de review; comments
+verschijnen als `github-actions[bot]`.
 
 1. **OAuth-token** — `npm install -g @anthropic-ai/claude-code`, dan
    `claude setup-token`. De token (`sk-ant-oat01-...`) wordt het repo-secret
    `CLAUDE_CODE_OAUTH_TOKEN`.
-2. **Claude GitHub App installeren** op je account + de target-repo's via
-   `/install-github-app` (of <https://github.com/apps/claude>). Dit geeft de
-   bot de rechten om op PR's te reageren en kan het secret meteen zetten.
-3. **Reviewer-repo publiek houden.** Deze repo bevat alleen review-instructies
+2. **Reviewer-repo publiek houden.** Deze repo bevat alleen review-instructies
    en moet **publiek** zijn, zodat de workflow de skills zonder token kan
    ophalen.
-4. **Per target-repo:** kopieer `templates/claude-review.yml` naar
+3. **Per target-repo:** kopieer `templates/claude-review.yml` naar
    `.github/workflows/claude-review.yml`, zorg dat het secret
    `CLAUDE_CODE_OAUTH_TOKEN` er staat, en push naar `main`.
-5. **Testen:** open een test-PR → binnen ~1 min verschijnt een review van
-   `claude[bot]`.
+4. **Testen:** open een test-PR → binnen ~2 min verschijnt een review van
+   `github-actions[bot]`.
 
-> **Niet meer nodig:** een apart bot-account (`codereviewer1986`) of een
-> Personal Access Token (`BOT_GITHUB_TOKEN`). Dat was de oude opzet; de Claude
-> GitHub App regelt de identiteit nu.
+> **Niet meer nodig:** een apart bot-account (`codereviewer1986`), een
+> Personal Access Token (`BOT_GITHUB_TOKEN`), óf de **Claude GitHub App**
+> (die was alleen nodig voor de oude agentische actie). Alleen het
+> OAuth-secret volstaat.
 
 ## Skills aanpassen
 
@@ -96,9 +97,9 @@ werk; bij meer targets later kun je overstappen op een reusable workflow.)
 
 ## Model
 
-De bot draait standaard op **Sonnet** (`--model sonnet` in `claude_args`).
-Sonnet houdt de kosten laag — de bot draait op jóuw abonnement en reviewt
-elke PR-push inclusief de volledige diff en alle skills.
+De bot draait standaard op **Sonnet**. Sonnet houdt de kosten laag — de bot
+draait op jóuw abonnement en reviewt elke PR-push inclusief de volledige diff
+en alle skills.
 
 **Handmatig een ander model kiezen:**
 Ga naar GitHub → Actions → "Claude PR review" → **Run workflow**. Vul het
@@ -109,9 +110,11 @@ Automatische runs bij PR-pushes gebruiken altijd Sonnet.
 
 ## Kosten
 
-**Nul.** De OAuth token gebruikt je bestaande Claude-abonnement (Pro of Max).
-GitHub Actions minutes voor private repos: ~30 sec per review, ruim binnen
-de free tier.
+**Geen API-kosten.** De OAuth token gebruikt je bestaande Claude-abonnement
+(Pro of Max). Elke review verbruikt wél abonnement-quota — sinds v2 typisch
+**~$0,15–0,25 equivalent per review** (één model-call). Het exacte bedrag per
+review staat in de **Actions job summary**. GitHub Actions minutes: ~2 min
+per review, ruim binnen de free tier.
 
 ## Troubleshooting
 
@@ -124,23 +127,16 @@ de free tier.
 - **Skills niet gevonden / 403 bij checkout van reviewer repo** → de
   reviewer-repo is niet **publiek**, of de `repository:`-regel in de workflow
   wijst naar de verkeerde plek.
-- **Bot reageert als `github-actions[bot]` i.p.v. `claude[bot]`** → de Claude
-  GitHub App is niet op die repo geïnstalleerd.
+- **Review komt van `github-actions[bot]`** → dat is sinds v2 normaal: de
+  workflow post zelf. De Claude GitHub App is niet meer nodig.
 - **Review is te oppervlakkig** → maak skills specifieker, of gebruik de
   handmatige `workflow_dispatch`-trigger om de PR op Opus te reviewen (zie
   sectie "Model" hierboven).
-- **Bot post dezelfde review twee keer voor één commit** → kan gebeuren
-  doordat het model de review meerdere keren post ("voor de zekerheid"), of
-  doordat twee runs overlappen. Een *nieuwe* comment per push is prima; alleen
-  dezelfde review dubbel voor dezelfde commit is de bug. Fix in
-  `templates/claude-review.yml`:
-  (1) elke review begint met een verborgen marker met de commit-SHA
-  (`<!-- claude-review:<sha> -->`); STEP 4 laat de bot eerst checken of er al
-  een review voor deze commit staat → zo ja, niet opnieuw posten. Nieuwe push
-  = nieuwe SHA = nieuwe comment, maar dubbel binnen één run kan niet meer.
-  (2) een `concurrency`-guard annuleert overlappende runs voor dezelfde PR.
-  (3) live-gang issues worden nog maar één keer per PR aangemaakt (marker +
-  `gh issue list`-check) i.p.v. bij elke push opnieuw.
-  NB: de comments worden geplaatst door `claude[bot]` (de actie zelf), niet
-  door `codereviewer1986`. Kopieer de bijgewerkte template naar
-  `.github/workflows/claude-review.yml` in elke target repo en push naar main.
+- **Bot post dezelfde review twee keer voor één commit** → kan sinds v2 niet
+  meer (bash post exact 1× en een dedup-gate stopt re-runs op dezelfde
+  commit vóór de model-call). Zie je het toch, dan draait die target-repo
+  nog een oude workflow-versie → kopieer de template opnieuw. Een *nieuwe*
+  comment per push is normaal en gewenst.
+- **Model-call faalt ("Lege model-output" in de log)** → meestal is de
+  OAuth-token verlopen: draai `claude setup-token` opnieuw en ververs het
+  secret. Anders: check de Actions-log van de stap "Review".
