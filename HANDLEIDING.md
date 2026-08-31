@@ -192,6 +192,11 @@ Alle reviewregels staan in `skills/*.md` in de reviewer-repo. De huidige set:
 | `16-file-storage.md` | file-/storage-security (path-traversal, download-authz) |
 | `17-datetime.md` | datum/tijd/tijdzone-correctheid |
 | `18-concurrency.md` | concurrency & verloren updates |
+| `19-i18n-vertalingen.md` | meertaligheid & vertalingen (incl. RTL) |
+| `20-mail-notificaties.md` | e-mail & notificaties (links, wachtrij, bounces) |
+| `21-reminders-crons.md` | reminders & achtergrondjobs |
+| `22-publieke-portalen.md` | magic-link-portalen (huispatroon) |
+| `23-geld-rekenwerk.md` | geld & rekenwerk |
 
 **Aanpassen:** edit een `.md`-bestand → commit & push naar de reviewer-repo's
 `main`. De **volgende** PR-review in elke target-repo gebruikt het direct. Je

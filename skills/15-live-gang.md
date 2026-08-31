@@ -9,7 +9,11 @@ GitHub issue zodat het inzichtelijk is in een centrale checklist.
 Een wijziging is **live-gang relevant** als één of meer van deze waar is:
 
 ### 1. Nieuwe infrastructuur / configuratie
-- Nieuwe **env vars** die in productie gezet moeten worden.
+- Nieuwe **env vars** die in productie gezet moeten worden — en let op: in
+  een Docker-Compose-productie moet een nieuwe var óók in de
+  `environment`-lijst van de app-container (`docker-compose.prod.yml`)
+  staan, niet alleen in de `.env`. Dit is al 3× vergeten; benoem het
+  expliciet als actie-item wanneer de PR een nieuwe env-var introduceert.
 - Nieuwe **externe service** (mail provider, OCR, AI, payment) → verwerkersovereenkomst nodig.
 - **DNS / SSL** wijzigingen.
 - **Maintenance window** nodig (grote migratie, schema-rename, etc.).

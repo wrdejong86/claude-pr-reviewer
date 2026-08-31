@@ -115,6 +115,14 @@ valkuilen.
 ### Wat te checken
 - Gevoelige helpers (DB, secrets) markeren met `import "server-only"` bovenaan → fail loud als per ongeluk client-side gebruikt.
 - Client-only browser-API's: `import "client-only"` om server-render te voorkomen.
+- **MAAR: geen `import "server-only"` in helpers die óók door CLI-scripts
+  (tsx/`scripts/*`) geladen worden** — de sentinel breekt het script met
+  MODULE_NOT_FOUND. Dit is al 2× gebeurd; check bij het toevoegen van de
+  sentinel of er een script-importpad bestaat (grep de imports).
+- **Geen non-function exports uit `"use server"`-files** (types, schema's,
+  constanten): dat breekt op runtime of bij de build. Zet schema's/types in
+  een apart bestand (bv. `_schema.ts` of `src/lib/schemas/`) — ook al 2×
+  als bug teruggekomen.
 
 ## Wat GEEN issue is
 - Pages router (legacy) — andere regels, sommige bovenstaande niet van toepassing.
