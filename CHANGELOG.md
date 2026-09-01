@@ -11,6 +11,51 @@ Belangrijke updates aan de review bot. Nieuwste bovenaan.
 
 ---
 
+## 2026-08-31 — 📚 Vijf nieuwe skills + drie aanscherpingen (audit op ~830 PR's)
+
+**Wat:** Skill-audit tegen de PR-historie sinds juni (hr-hub #290 → #1116)
+plus de pre-flight checklist van terugkerende review-bevindingen. De app is
+sindsdien fundamenteel veranderd (meertalig, mail-wachtrij, klant-portalen
+overal, drie geld-rekenmodules) — daar waren geen skills voor.
+
+Nieuw:
+- `19-i18n-vertalingen` — meertaligheid: fallbacks bij lege vertaling,
+  id-gebonden keys, alles-of-niets imports met niveau-checks, RTL, mails in
+  de taal van de ontvanger.
+- `20-mail-notificaties` — token-dragende links naar externen (3× 403-
+  incident), absolute beeld-URLs via APP_URL, wachtrij-idempotency,
+  verstuurvenster, bounce-pad, mail via het choke-point.
+- `21-reminders-crons` — doelgroep-filters (uit-dienst/onderaannemers!),
+  dedupe-keys, venster i.p.v. exacte dag, self-closing, retry + alert.
+- `22-publieke-portalen` — het magic-link-huispatroon: middleware-whitelist,
+  rate-limit vóór token-lookup, 404 niet 403, token-levenscyclus incl.
+  intrekken bij afronden, geen interne lekkage, sub-resources met token.
+- `23-geld-rekenwerk` — geen floats voor geld, afrondingsmoment,
+  %-grondslag benoemen, schema-invarianten (som termijnen == hoofdsom),
+  wettelijke drempels als geteste constanten.
+
+Aangescherpt:
+- `11-nextjs` — `server-only`-sentinel niet in CLI-geladen helpers (2×
+  incident); geen non-function exports uit `"use server"`-files (2×).
+- `15-live-gang` — nieuwe env-var óók in de `environment`-lijst van
+  `docker-compose.prod.yml` (3× vergeten).
+- `17-datetime` — weergave via gedeelde datum-helpers met vaste tijdzone;
+  geen inline `Intl.DateTimeFormat` (drie opruim-PR's).
+
+**Actie nodig?** Nee — skills worden bij elke review live opgehaald.
+
+---
+
+## 2026-07-04 — 🔧 v2-pijplijn teruggedraaid naar v1-actie (hr-hub #697)
+
+**Wat:** De single-shot pijplijn (v2) is in hr-hub kort live geweest en
+bewust teruggedraaid: goedkoper in tokens, maar significant trager in
+doorlooptijd. De bot draait weer op `claude-code-action@v1` mét de
+behouden verbeteringen: skills inline via de pre-step, `workflow_dispatch`
+met modelkeuze, SHA-marker-dedup, concurrency-guard en `paths-ignore`.
+
+---
+
 ## 2026-06-17 — 🔧 Skills inline via pre-step (omzeil v1-actie-bug)
 
 **Wat:** De skills worden nu in een **pre-step** (`Inline reviewer skills voor

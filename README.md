@@ -81,6 +81,11 @@ Alles in `skills/*.md` is fair game. Voeg toe, pas aan, verwijder. De huidige se
 - `16-file-storage.md` — file-/storage-security (path-traversal, download-authz, DB↔storage)
 - `17-datetime.md` — datum/tijd/tijdzone-correctheid
 - `18-concurrency.md` — concurrency & verloren updates
+- `19-i18n-vertalingen.md` — meertaligheid (fallbacks, id-gebonden keys, RTL, mails in taal ontvanger)
+- `20-mail-notificaties.md` — mail & notificaties (token-links, beeld-URLs, wachtrij-idempotency, bounces)
+- `21-reminders-crons.md` — reminders & achtergrondjobs (doelgroep-filters, dedupe, vensters, self-closing)
+- `22-publieke-portalen.md` — magic-link-portalen (middleware-whitelist, rate-limit vóór lookup, token-levenscyclus)
+- `23-geld-rekenwerk.md` — geld & rekenwerk (geen floats, afrondingsmoment, %-grondslag, schema-invarianten)
 
 Workflow van wijzigen → effect: edit → `git push` in deze repo → volgende PR
 in elke target repo gebruikt de nieuwe skills automatisch.

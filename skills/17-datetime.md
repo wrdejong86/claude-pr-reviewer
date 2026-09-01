@@ -11,6 +11,12 @@ Datum/tijd-logica is in deze codebase een terugkerende bron van subtiele bugs
 - **Vergelijkingen** doen op UTC/`Date`-objecten, niet op geformatteerde strings.
 - Geen handmatige `+1 uur`-correcties verspreid door de code (symptoom van een
   tijdzone-misverstand).
+- **Weergave altijd via de gedeelde datum-helpers** met een expliciete vaste
+  tijdzone — geen inline `Intl.DateTimeFormat`/`toLocaleDateString` per
+  component (dat gaf eerder per-omgeving verschillende datums en drie
+  opruim-PR's). Nieuwe inline datum-formattering in de diff = bevinding.
+- Ken de **server-tijdzone-keuze van de app** en maak "vandaag"-grenzen
+  daar expliciet op — niet impliciet op de runner/container-default.
 
 ## 2. Date-only vs datetime (midnight-truncatie)
 
