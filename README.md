@@ -87,12 +87,29 @@ Alles in `skills/*.md` is fair game. Voeg toe, pas aan, verwijder. De huidige se
 - `22-publieke-portalen.md` — magic-link-portalen (middleware-whitelist, rate-limit vóór lookup, token-levenscyclus)
 - `23-geld-rekenwerk.md` — geld & rekenwerk (geen floats, afrondingsmoment, %-grondslag, schema-invarianten)
 
+**Platform-specifiek in `skills/macos/`** — alleen voor native Mac-apps, wordt
+*niet* meegeladen door de webstack-targets (zie `skills/README.md`):
+
+- `macos/01-swift.md` — Swift 6: Sendable, actor-isolatie, taken, crashes in een langlevende app
+- `macos/02-swiftui-macos.md` — kosten van `body`, menubar-apps, licht/donker, leeg vs. mislukt
+- `macos/03-externe-commandos.md` — `Process`/`ssh`/`gh`: shell-injectie, PATH in een GUI-app, pipe-deadlock, geheimen
+- `macos/04-app-bundel-en-rechten.md` — bundel, signatuur, sandbox, meldingen, opslag op schijf
+
 Workflow van wijzigen → effect: edit → `git push` in deze repo → volgende PR
 in elke target repo gebruikt de nieuwe skills automatisch.
 
 Zie [skills/README.md](skills/README.md) voor het format van een skill.
 
 ## Workflow-logica aanpassen
+
+Er zijn twee templates:
+
+- [`templates/claude-review.yml`](templates/claude-review.yml) — webstack: laadt
+  alle genummerde skills uit de hoofdmap.
+- [`templates/claude-review-macos.yml`](templates/claude-review-macos.yml) —
+  native Mac-app: laadt een doorsnede van acht algemene skills plus de hele map
+  `skills/macos/`, en slaat de live-gang-triage over (een desktop-app heeft geen
+  productie-omgeving). In gebruik door `wrdejong86/flightcontrol`.
 
 Staat in [templates/claude-review.yml](templates/claude-review.yml). Aanpassen
 betekent: edit hier, daarna in elke target repo het overeenkomstige
