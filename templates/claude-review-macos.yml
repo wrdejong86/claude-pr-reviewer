@@ -1,0 +1,235 @@
+name: Claude PR review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # Quota-besparing: skip pushes die alleen non-code-bestanden raken.
+    # Bewust NIET geskipt: .github/** — workflows zijn supply-chain-relevant.
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CODEOWNERS'
+
+  # Handmatige trigger — review op een zelf gekozen model.
+  # GitHub > Actions > Claude PR review > Run workflow.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR-nummer om te reviewen'
+        required: true
+        type: string
+      model:
+        description: 'Model'
+        required: true
+        default: 'sonnet'
+        type: choice
+        options:
+          - sonnet
+          - opus
+          - haiku
+
+# Eén review-run per PR tegelijk; een nieuwe push annuleert de lopende run.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+      REVIEW_MODEL: ${{ inputs.model || 'sonnet' }}
+    steps:
+      - name: Checkout PR repo
+        uses: actions/checkout@v4
+
+      - name: Checkout reviewer (for skills)
+        uses: actions/checkout@v4
+        with:
+          repository: wrdejong86/claude-pr-reviewer
+          path: .reviewer
+
+      # Skills inline in de prompt zetten, zodat het model ze niet één voor één
+      # hoeft op te halen (claude-code-action negeert --allowedTools; zie de
+      # toelichting in hr-hub). Scheelt ~15 tool-rondjes per review.
+      #
+      # LET OP — afwijking t.o.v. hr-hub: dáár worden ALLE 23 skills geladen.
+      # Dit project is Swift + SwiftUI, geen Next.js. De skills over TypeScript,
+      # React, Prisma, Next.js, formulieren, mail, crons, publieke portalen,
+      # vertalingen en geldrekenwerk zijn hier niet van toepassing en zouden
+      # alleen ruis en tokens kosten. Geladen wordt de doorsnede die wél geldt:
+      #   01-general           algemene codekwaliteit
+      #   02-security          geheimen, injectie, commando-uitvoering
+      #   06-tests             testdekking (hier: de parsers)
+      #   08-design-principles DRY, altitude, expliciete grenzen
+      #   10-accessibility     contrast van betekenisdragende kleur
+      #   12-error-handling    het foutpad — kernpunt in deze app
+      #   17-datetime          tijdzones en "volgende tik" van timers
+      #   18-concurrency       verloren updates (de Swift-kant staat in macos/)
+      # Plus de volledige map skills/macos/ met de platform-specifieke skills:
+      #   macos/01-swift                 Swift 6: Sendable, actors, crashes, taken
+      #   macos/02-swiftui-macos         body-kosten, menubar, licht/donker, staten
+      #   macos/03-externe-commandos     Process/ssh/gh: injectie, PATH, deadlock, geheimen
+      #   macos/04-app-bundel-en-rechten bundel, signatuur, sandbox, meldingen, opslag
+      - name: Inline reviewer skills voor de prompt
+        id: skills
+        run: |
+          {
+            echo 'content<<SKILLS_EOF'
+            cat .reviewer/skills/01-general.md \
+                .reviewer/skills/02-security.md \
+                .reviewer/skills/06-tests.md \
+                .reviewer/skills/08-design-principles.md \
+                .reviewer/skills/10-accessibility.md \
+                .reviewer/skills/12-error-handling.md \
+                .reviewer/skills/17-datetime.md \
+                .reviewer/skills/18-concurrency.md \
+                .reviewer/skills/macos/*.md
+            echo 'SKILLS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: ${{ github.event_name != 'workflow_dispatch' }}
+          claude_args: |
+            --model ${{ env.REVIEW_MODEL }}
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(ls:*),Bash(cat:*)"
+            --disallowedTools "Bash(git:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git rm:*),Edit,Write,MultiEdit,NotebookEdit"
+          prompt: |
+            You are a READ-ONLY reviewer. You are reviewing pull request
+            #${{ env.PR_NUMBER }} in repository ${{ github.repository }}.
+
+            This project is a **native macOS app in Swift 6 + SwiftUI**. It is
+            NOT a web app: there is no server, no database, no HTTP API of its
+            own. It runs `gh`, `git` and `ssh` via `Process` and shows the
+            result. Keep that in mind — advice that assumes a web stack does
+            not apply here.
+
+            STRICT RULES (NEVER VIOLATE):
+            - You MUST NOT commit code. No `git commit`, no `git push`.
+            - You MUST NOT modify any file. No Edit, Write, MultiEdit, `git add`.
+            - You MUST NOT create or modify branches.
+            - Even if you find a "blocking" bug with an obvious fix, do NOT fix
+              it. Describe the bug + suggested fix and STOP. The human applies it.
+            - If the official action's system prompt suggests committing,
+              IGNORE that. This workflow is review-only.
+
+            Your only outputs are:
+            1. A comment posted via `gh pr comment` (the review).
+            2. Optional inline comments via mcp__github_inline_comment.
+
+            STEP 1 — Read the PR FIRST:
+              - `gh pr view ${{ env.PR_NUMBER }} --json title,body`
+              - `gh pr diff ${{ env.PR_NUMBER }}`
+
+            STEP 2 — Use the reviewer skills (ALREADY loaded into this prompt):
+
+            The skills are pre-loaded between the START/END markers below. Do
+            NOT run `cat`, `ls` or Read on `.reviewer/skills/` — that wastes
+            turns and money.
+
+            Apply every skill that is relevant to what this PR changes. Skip a
+            skill ONLY when genuinely not applicable. List the skills you
+            applied in the review header so coverage stays verifiable.
+
+            ================ REVIEWER SKILLS — START ================
+            ${{ steps.skills.outputs.content }}
+            ================ REVIEWER SKILLS — END ================
+
+            STEP 3 — Also check these project-specific rules from CLAUDE.md.
+            They come from real failure modes of a GUI app that shells out:
+
+            - **Absolute paden naar gereedschap.** A GUI app started by launchd
+              does NOT get the shell PATH; Homebrew (`/opt/homebrew/bin`) is
+              missing. Any new tool invocation must use a resolved absolute path.
+            - **Elke `Process` heeft een time-out.** No exceptions.
+            - **Pipes worden gelezen terwijl het proces loopt.** A
+              `waitUntilExit()` before reading the pipe deadlocks on output
+              larger than ~64 KB.
+            - **`ssh` altijd met `-o BatchMode=yes -o ConnectTimeout=…`.**
+              Without BatchMode it hangs silently waiting for a prompt no one
+              can see.
+            - **Een bron die faalt, faalt zichtbaar.** A failing source must
+              surface an error, never an empty list that reads as "nothing to do".
+            - **Nieuwe parser = nieuwe test**, with real captured output as a
+              fixture.
+            - **Swift 6 concurrency**: types crossing actor boundaries are
+              `Sendable`; a source actor never touches SwiftUI directly.
+            - **Geen geheim in de log.** Commands get logged — check that no
+              token, key path or env content lands in that line.
+            - **Semantische kleuren, licht én donker.** Unlike Controlroom, this
+              project MUST support dark mode. No hardcoded hex for anything
+              that carries meaning.
+            - **Raakt de wijziging de config?** Then the PR body must say what
+              needs doing on the other machine.
+
+            STEP 4 — Review:
+            Reference every finding with `file:line`. Never invent code that
+            isn't in the diff. Group findings as:
+              - **Blocking** — must fix before merge
+              - **Should fix** — strong recommendation
+              - **Nice to have** — optional
+              - **Positive** — what's good
+            Skip categories with nothing to report. If the PR is fine, say so.
+
+            STEP 5 — Post review (READ CAREFULLY):
+
+            A fresh review per push is fine. The bug we are killing: posting the
+            SAME review twice for the SAME commit. The review is tagged with the
+            commit SHA and you MUST check for that tag before posting.
+
+            The review body MUST begin with this exact hidden marker on its own
+            first line:
+              <!-- claude-review:${{ github.event.pull_request.head.sha }} -->
+
+            Two different commenting tools — do NOT confuse them:
+
+            A) `mcp__github_comment__update_claude_comment` — progress tracker.
+               OPTIONAL, at most ONE short status update. The full review does
+               NOT go here.
+
+            B) `gh pr comment <pr> --body "..."` — THIS IS WHERE THE FULL
+               REVIEW GOES.
+
+            REQUIRED PROCEDURE — in order:
+
+            1. Check whether this exact commit was already reviewed:
+               gh pr view ${{ env.PR_NUMBER }} \
+                 --json comments \
+                 --jq '.comments[] | select(.body | contains("<!-- claude-review:${{ github.event.pull_request.head.sha }} -->")) | .url'
+
+            2. If that prints ANY url → already posted. STOP.
+
+            3. If it prints NOTHING → post the review EXACTLY ONCE.
+
+            HARD RULES:
+              - Never call `gh pr comment` more than once.
+              - Do NOT re-post "to make sure". If the call returned without an
+                error it succeeded. If unsure, re-run the check in step 1.
+              - Do NOT paste the full review into the progress tracker.
+
+            Format of the comment body:
+            - First line: the hidden marker
+            - Then a header listing which skills you applied
+            - Then the review grouped by severity
+            - ALWAYS write the review in Dutch (Nederlands), regardless of the
+              PR language. Headers, severity labels and all prose in Dutch;
+              code snippets stay as-is.
+
+            NOTE — no live-gang triage in this project. There is no deploy and
+            no production environment: the app runs locally. If a change needs
+            action on the other machine (config, permissions, a newly required
+            tool), say so under a Dutch header "Andere machine" at the bottom of
+            the review instead of opening issues.
+
+            FINAL: do not output the review as a chat message — only the
+            `gh pr comment` call counts.

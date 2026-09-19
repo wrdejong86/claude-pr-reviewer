@@ -10,6 +10,34 @@ Claude meegegeven bij elke PR review. Zo werkt het:
   als de volgorde uitmaakt.
 - `README.md` wordt overgeslagen (dit bestand).
 
+## Platform-specifieke skills staan in een submap
+
+De skills in de **hoofdmap** gaan over de webstack (Next.js, React, Prisma) en
+worden door die targets geladen met `cat skills/[0-9]*.md` — **alles wat genummerd
+is en in de hoofdmap staat**.
+
+Skills die alleen voor één platform gelden horen daarom in een submap, zodat ze
+niet per ongeluk in een review van een ander project belanden:
+
+```
+skills/
+├── 01-general.md … 23-geld-rekenwerk.md    ← webstack, door alle targets geladen
+└── macos/                                  ← alleen voor native Mac-apps
+    ├── 01-swift.md
+    ├── 02-swiftui-macos.md
+    ├── 03-externe-commandos.md
+    └── 04-app-bundel-en-rechten.md
+```
+
+**Waarom:** `[0-9]*.md` recurst niet. Een Swift-skill als `24-swift.md` in de
+hoofdmap zou in élke Next.js-review meegeladen worden, met regels over actors en
+`Process` die daar niets betekenen. Een submap voorkomt dat zonder dat de bestaande
+targets iets hoeven te wijzigen.
+
+Een target die zo'n platform-set wél wil, laadt hem expliciet:
+`cat skills/<subset>.md skills/macos/*.md`. Zie
+`templates/claude-review-macos.yml`.
+
 ## Een skill toevoegen
 
 1. Maak `skills/<naam>.md`
